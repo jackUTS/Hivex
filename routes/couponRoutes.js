@@ -4,8 +4,9 @@ const express = require("express");
 const asyncHandler = require("../middleware/asyncHandler");
 const { currentVenue } = require("../middleware/current-venue");
 const Coupon = require("../models/couponModel");
-const Deal = require("../models/dealModel")
-const voucher = require("voucher-code-generator")
+const Deal = require("../models/dealModel");
+const voucher = require("voucher-code-generator");
+const { currentMember } = require("../middleware/current-member");
 
 const router = express.Router();
 
@@ -14,22 +15,42 @@ const router = express.Router();
 router.post(
     "/",
     currentVenue,
+    currentMember,
     asyncHandler(async (req, res) => {
         const { title, code, value, expiry } = req.body;
+
+        const existingCoupon = await Coupon.findOne({
+            memberId: req.currentMember.id,
+            dealId,
+        });
+
+        if (existingCoupon) {
+            return res.status(400).json({ error: 'Member already has a coupon for this deal'});
+        }
+
+        const deal = await Deal.findById(dealId);
+
+        if (!deal) {
+            return res.status(400).json({ error: 'Selected deal does not exist'});
+        }
+
+        for (i = 0; i < deal.totalCreated; i++) {
         const couponCode = voucher.generate({
             length: 4,
             charset: 'alphanumeric',
-            count: Deal.totalCreated,
-        })
+        })[0]
 
         const coupon = await Coupon.create({
-            title,
-            code,
-            value,
-            expiry,
+            title: deal.title,
+            code: couponCode,
+            value: deal.value,
+            expiry: deal.expiry,
             venueId: req.currentVenue.id,
+            memberId: req.currentMember.id,
+            dealId: "65390b676d471d276a63d068",
         });
         await coupon.save();
+    }
 
         res.status(201).send(coupon);
     })

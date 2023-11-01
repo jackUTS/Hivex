@@ -24,6 +24,10 @@ const couponSchema = mongoose.Schema(
           type: String,
           required: true
         },
+        dealId: {
+          type: String,
+          required: true,
+        },
         points: {
           type: Number,
           default: 10
