@@ -1,14 +1,14 @@
 // Import necessary modules
 const express = require('express'); // Import the Express.js framework
 const mongoose = require('mongoose'); // Import the Mongoose library for MongoDB interactions
-const Coupon = require('./path-to-coupon-model'); // Import the Coupon model (assuming it's in a separate file)
-const Member = require('./path-to-member-model'); // Import the Member model
-const Venue = require('./path-to-venue-model'); // Import the Venue model
-const currentMember = require('./path-to-current-member-middleware'); // Import middleware for current member
-const currentVenue = require('./path-to-current-venue-middleware'); // Import middleware for current venue
+const Coupon = require("../models/couponModel"); // Import the Coupon model 
+const Member = require("../models/memberModel"); // Import the Member model
+const Venue = require("../models/venueModel"); // Import the Venue model
+const currentMember = require("../middleware/current-member"); // Import middleware for current member
+const currentVenue = require("../middleware/current-venue"); // Import middleware for current venue
 
-// Connect to the MongoDB database (assuming you have a valid MongoDB URI)
-mongoose.connect('mongodb://localhost:27017/your-database-name', {
+// Connect to the MongoDB database 
+mongoose.connect('mongodb://localhost:27017/hivex', {
   useNewUrlParser: true, // Configuration option for MongoDB connection
   useUnifiedTopology: true, // Configuration option for MongoDB connection
   useCreateIndex: true, // Configuration option for MongoDB connection
