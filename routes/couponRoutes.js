@@ -70,4 +70,35 @@ router.get(
     })
 )
 
+// Redeem coupon
+// POST /api/coupons/redeem-coupon
+router.post('/api/redeem-coupon', 
+    currentVenue,
+    asyncHandler(async (req, res) => {
+        const code = req.params.code
+        const coupon = await Coupon.findOne({code})
+        const memberId = req.currentMember.id;
+        const couponsForMember = coupons.filter(coupon => coupon.memberId === memberId);
+
+        if (!coupon) {
+            throw new NotFoundError()
+        }
+        if (coupon.expiry < new Date()/1000){
+            throw new BadRequestError("Coupon Expired")
+        }
+        if (coupon.redeemed === true){
+            throw new BadRequestError("Coupon Already Redeemed")
+        }
+        if (coupon.memberId === req.currentMember.id){
+            throw new BadRequestError("Coupon Already Redeemed")
+        } 
+        if (couponsForMember.length >= 6) {
+        throw new BadRequestError("No more than 6 coupons per member allowed"); 
+        }
+        else {
+            res.json({ success: true, message: 'Coupon redeemed successfully' });
+        }
+    })
+);
+
 module.exports = router;
