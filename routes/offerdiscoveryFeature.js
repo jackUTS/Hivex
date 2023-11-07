@@ -102,9 +102,3 @@ app.post('/distribute-offer/:couponId', currentMember, async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' }); // Handle internal server errors
   }
 });
-
-// Start the Express server
-const port = process.env.PORT || 3000; // Set the server's port
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`); // Start the server and log the port it's running on
-});

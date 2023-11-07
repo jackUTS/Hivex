@@ -19,6 +19,7 @@ const couponSchema = mongoose.Schema(
         },
         memberId: {
           type: String,
+          default: null
         },
         venueId: {
           type: String,
@@ -30,7 +31,7 @@ const couponSchema = mongoose.Schema(
         },
         redeemed: {
           type: Boolean,
-          default: true
+          default: false
         }
     },
     {

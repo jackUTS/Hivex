@@ -3,6 +3,7 @@ const express = require("express");
 
 const asyncHandler = require("../middleware/asyncHandler");
 const { currentVenue } = require("../middleware/current-venue");
+const { currentMember } = require("../middleware/current-member");
 const Coupon = require("../models/couponModel");
 const Deal = require("../models/dealModel")
 const voucher = require("voucher-code-generator")
@@ -35,7 +36,7 @@ router.post(
     })
 );
 
-// get all coupons
+// get all venue coupons
 // GET /api/coupons
 router.get(
     "/",
@@ -72,12 +73,18 @@ router.get(
 
 // Redeem coupon
 // POST /api/coupons/redeem-coupon
-router.post('/api/redeem-coupon', 
-    currentVenue,
+router.post('/redeem-coupon/:code', 
+    currentMember,
     asyncHandler(async (req, res) => {
+
+        if (!req.currentMember) {
+            throw new BadRequestError("Member not authenticated");
+        }
+          
         const code = req.params.code
         const coupon = await Coupon.findOne({code})
         const memberId = req.currentMember.id;
+        const coupons = await Coupon.find();
         const couponsForMember = coupons.filter(coupon => coupon.memberId === memberId);
 
         if (!coupon) {
@@ -96,6 +103,10 @@ router.post('/api/redeem-coupon',
         throw new BadRequestError("No more than 6 coupons per member allowed"); 
         }
         else {
+            coupon.memberId = req.currentMember.id;
+            coupon.redeemed = true;
+            await coupon.save()
+            res.status(201).send(coupon);
             res.json({ success: true, message: 'Coupon redeemed successfully' });
         }
     })
