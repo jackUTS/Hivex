@@ -1,28 +1,19 @@
 // Import necessary modules
 const express = require('express'); // Import the Express.js framework
 const mongoose = require('mongoose'); // Import the Mongoose library for MongoDB interactions
+const nodemailer = require('nodemailer'); // Import the Nodemailer
 const Coupon = require("../models/couponModel"); // Import the Coupon model 
 const Member = require("../models/memberModel"); // Import the Member model
 const Venue = require("../models/venueModel"); // Import the Venue model
+const Deal = require("../models/dealModel"); // Import the Deal model
 const currentMember = require("../middleware/current-member"); // Import middleware for current member
 const currentVenue = require("../middleware/current-venue"); // Import middleware for current venue
-
-// Connect to the MongoDB database 
-mongoose.connect('mongodb://localhost:27017/hivex', {
-  useNewUrlParser: true, // Configuration option for MongoDB connection
-  useUnifiedTopology: true, // Configuration option for MongoDB connection
-  useCreateIndex: true, // Configuration option for MongoDB connection
-});
-
-// Create an Express application
-const app = express(); // Create an instance of the Express application
-app.use(express.json()); // Use middleware to parse JSON data in requests
 
 // Define routes and logic for offer creation, approval, and distribution
 // These routes can be used by brokers and venues as needed
 
 // Create an offer by a broker
-app.post('/create-offer', currentMember, async (req, res) => {
+app.post('/create-offer', currentMember, asyncHandler(async (req, res) => {
   try {
     const { title, code, value, expiry, memberId, venueId } = req.body; // Extract request data
 
@@ -37,74 +28,94 @@ app.post('/create-offer', currentMember, async (req, res) => {
       return res.status(404).json({ error: 'Venue not found' }); // Return an error response if the venue doesn't exist
     }
 
-    // Create a new coupon offer
-    const coupon = await Coupon.create({
+    // Forward the request to the '/api/coupons' route, passing the relevant data to create a coupon
+    req.body = {
       title,
       code,
       value,
       expiry,
-      memberId,
-      venueId,
-    });
+    };
 
-    res.status(201).json(coupon); // Respond with the created coupon
+    await router.handle(req, res);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' }); // Handle internal server errors
   }
-});
+}));
 
-// Approve an offer by the venue
+// Define a POST route for approving an offer with a dynamic parameter :couponId
 app.post('/approve-offer/:couponId', currentVenue, async (req, res) => {
   try {
     const couponId = req.params.couponId; // Get the coupon ID from the request parameters
 
     // Check if the current user is a venue
-    if (!req.currentVenue) { // Check the current venue's presence
-      return res.status(403).json({ error: 'Only venues can approve offers' }); // Return an error response
+    if (!req.currentVenue) {
+      return res.status(403).json({ error: 'Only venues can approve offers' }); // Return a 403 Forbidden response
     }
 
     // Check if the coupon exists and belongs to the current venue
     const coupon = await Coupon.findOne({ _id: couponId, venueId: req.currentVenue.id });
     if (!coupon) {
-      return res.status(404).json({ error: 'Coupon not found' }); // Return an error response if the coupon doesn't exist
+      return res.status(404).json({ error: 'Coupon not found' }); // Return a 404 Not Found response if the coupon doesn't exist
     }
 
-    coupon.approved = true; // Mark the coupon as approved
+    // Mark the coupon as approved
+    coupon.approved = true;
 
-    await coupon.save(); // Save the updated coupon
+    // Save the updated coupon
+    await coupon.save();
 
-    res.status(200).json({ message: 'Offer approved' }); // Respond with a success message
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' }); // Handle internal server errors
+  // Now, update the Deal to set isActive to true
+  const deal = await Deal.findOne({ _id: coupon.dealId });
+  if (deal) {
+    deal.isActive = true;
+    await deal.save(); // Save the updated deal
+
+    // Send the offer to all members
+    await sendOfferToAllMembers(coupon);
+
+    res.status(200).json({ message: 'Offer approved and sent to all members' }); // Respond with a 200 OK success message
+  } else {
+    // Handle the case where the deal associated with the coupon is not found
+    return res.status(404).json({ error: 'Deal not found' }); // Return a 404 Not Found response
   }
+} catch (error) {
+  res.status(500).json({ error: 'Internal Server Error' }); // Handle and return a 500 Internal Server Error in case of an exception
+}
 });
 
-// Distribute offers to selected members
-app.post('/distribute-offer/:couponId', currentMember, async (req, res) => {
+// Function to send the offer to all members using Nodemailer
+async function sendOfferToAllMembers(coupon) {
   try {
-    const couponId = req.params.couponId; // Get the coupon ID from the request parameters
+    const members = await Member.find(); // Fetch all members
 
-    // Check if the current user is a broker
-    if (!req.currentMember.isBroker) { // Check the current member's role
-      return res.status(403).json({ error: 'Only brokers can distribute offers' }); // Return an error response
+    // Create a Nodemailer transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'hivex@gmail.com', // Replace with actual Gmail email address
+        pass: 'hivex123', // Replace with your Gmail email password
+      },
+    });
+
+    // Loop through each member and send the offer
+    for (const member of members) {
+      const mailOptions = {
+        from: 'hivex@gmail.com', // Replace with your Gmail email address
+        to: member.email, // Use the member's email address
+        subject: 'New Offer Available',
+        text: `Dear ${member.name},\n\nA new offer is now available: ${coupon.title} (${coupon.code}).\n\nDetails: ${coupon.value} off, expires on ${coupon.expiry}.`,
+      };
+
+      // Send the email
+      await transporter.sendMail(mailOptions);
     }
 
-    // Check if the coupon exists and belongs to the current member (broker)
-    const coupon = await Coupon.findOne({ _id: couponId, memberId: req.currentMember.id });
-    if (!coupon) {
-      return res.status(404).json({ error: 'Coupon not found' }); // Return an error response if the coupon doesn't exist
-    }
-
-    // Send the coupon to selected members via email or push notifications
-
-    res.status(200).json({ message: 'Offer distributed to selected members' }); // Respond with a success message
+    console.log('Offer sent to all members successfully.');
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' }); // Handle internal server errors
+    console.error('Error sending offer to members:', error);
+    // Handle the error as needed
   }
-});
+}
 
-// Start the Express server
-const port = process.env.PORT || 3000; // Set the server's port
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`); // Start the server and log the port it's running on
-});
+module.exports = router;
+
