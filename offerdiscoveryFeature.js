@@ -83,10 +83,11 @@ app.post('/approve-offer/:couponId', currentVenue, async (req, res) => {
 }
 });
 
-// Function to send the offer to all members using Nodemailer
-async function sendOfferToAllMembers(coupon) {
+// Function to send the offer to specified members using Nodemailer
+async function sendOfferToMembers(memberIds, coupon) {
   try {
-    const members = await Member.find(); // Fetch all members
+    // Fetch the specified members based on their IDs
+    const members = await Member.find({ _id: { $in: memberIds } });
 
     // Create a Nodemailer transporter
     const transporter = nodemailer.createTransport({
@@ -97,22 +98,24 @@ async function sendOfferToAllMembers(coupon) {
       },
     });
 
-    // Loop through each member and send the offer
+    // Loop through each specified member and send the offer
     for (const member of members) {
       const mailOptions = {
-        from: 'hivex@gmail.com', // Replace with your Gmail email address
-        to: member.email, // Use the member's email address
+        from: 'hivex@gmail.com',
+        to: member.email,
         subject: 'New Offer Available',
-        text: `Dear ${member.name},\n\nA new offer is now available: ${coupon.title} (${coupon.code}).\n\nDetails: ${coupon.value} off, expires on ${coupon.expiry}.`,
+        text: 'Dear ' + member.name + ',\n\n' +
+          'A new offer is now available: ' + coupon.title + ' (' + coupon.code + ').\n\n' +
+          'Details: ' + coupon.value + ' off, expires on ' + coupon.expiry + '.',
       };
 
       // Send the email
       await transporter.sendMail(mailOptions);
     }
 
-    console.log('Offer sent to all members successfully.');
+    console.log('Offer sent to specified members successfully.');
   } catch (error) {
-    console.error('Error sending offer to members:', error);
+    console.error('Error sending offer to specified members:', error);
     // Handle the error as needed
   }
 }
