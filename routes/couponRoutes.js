@@ -106,7 +106,7 @@ router.post('/redeem-coupon/:code',
         throw new BadRequestError("No more than 6 coupons per member allowed"); 
         }
         else {
-            res.status(201).send(coupon);
+            res.send(coupon);
         }
     })
 );

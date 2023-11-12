@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const asyncHandler = require("../middleware/asyncHandler");
 const { currentMember } = require("../middleware/current-member");
 const Member = require("../models/memberModel");
+const Coupon = require("../models/couponModel");
 const crypto = require('crypto');
 
 const router = express.Router();
@@ -224,5 +225,19 @@ router.post("/members/signout", (req, res) => {
 router.get("/members/profile", currentMember, (req, res) => {
     res.send({ currentMember: req.currentMember || null });
 });
+
+// get all member coupons
+// GET /api/member/coupons
+router.get(
+    "/member/coupons",
+    currentMember,
+    asyncHandler(async (req, res) => {
+        const coupons = await Coupon.find({
+            memberId: req.currentMember.id,
+        });
+
+        res.send(coupons);
+    })
+);
 
 module.exports = router;
