@@ -12,18 +12,17 @@ const { currentMember } = require("../middleware/current-member");
 
 const router = express.Router();
 
-// get all venues
-// GET /venues
+// get all venues for Brokers
+// GET api/venues
 router.get(
     "/",
     currentMember,
     asyncHandler(async (req, res) => {
-        if(currentMember.isBroker === false){
-            throw new BadRequestError("Only brokers can view venues");
-        }
-        else {
+        if(req.currentMember.isBroker) {
             const venues = await Venue.find({});
             res.send(venues);
+        } else {
+            throw new BadRequestError("Only brokers can view all venues");
         }
     })
 );
@@ -72,7 +71,7 @@ router.post(
     })
 );
 
-//Add Venue
+//Add Venue as Broker
 //POST /api/venues/add-venue
 router.post(
     "/add-venue",
@@ -88,33 +87,57 @@ router.post(
     asyncHandler(async (req, res) => {
         const { name, address, email, password} = req.body;
         const existingVenue = await Venue.findOne({ email });
-        const memberId = req.currentMember.id
+        
+        console.log(req.currentMember.isBroker);
 
-        if(memberId.isBroker === false) {
+        if(req.currentMember.isBroker === false) {
             throw new BadRequestError("You must be logged in as a broker to add a venue");
         }
         if (existingVenue) {
             console.log("Email in use");
             throw new BadRequestError("Email in use");
         }
-        const venue = await Venue.create({
-            venue_id: new mongoose.Types.ObjectId(),
-            name,
-            address,
-            email,
-            password,
-        });
-        if (memberId.isBroker === true) {
-            res.status(403).send({ message: 'Rawr' });
+        if (req.currentMember.isBroker === true) {
+            const venue = await Venue.create({
+                venue_id: new mongoose.Types.ObjectId(),
+                name,
+                address,
+                email,
+                password,
+            });
             await venue.save();
-            res.status(201).send(venue);
+            res.status(201).send({message: "Venue Added", venue: venue});
 
         } else {
-            res.send(venue)
             res.status(403).send({ message: 'Only brokers can add venues' });
         }
     })
 );
+
+// Update venue
+// POST /api/venues/update-venue
+router.post(
+    "/update-venue",
+    currentVenue,
+    asyncHandler(async (req, res) => {
+        const venueId = req.currentVenue.id;
+        const venue = await Venue.findById(venueId);
+        const { name, address, email, password } = req.body;
+
+        if (!venue) {
+            throw new BadRequestError("Venue not found");
+        }
+
+        venue.name = name || venue.name;
+        venue.address = address || venue.address;
+        venue.email = email || venue.email;
+        venue.password = password || venue.password;
+
+        await venue.save();
+
+        res.status(201).send(venue);
+    })
+)
 
 // Sign in
 // POST /api/venues/signin

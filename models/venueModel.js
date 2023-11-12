@@ -1,13 +1,8 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
-const { ObjectId } = require("mongodb");
 
 const venueSchema = mongoose.Schema(
     {
-        venue_id: {
-            type: ObjectId,
-            required: true,
-        },
         name: {
             type: String,
             require: true,

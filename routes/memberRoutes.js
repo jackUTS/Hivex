@@ -217,7 +217,7 @@ router.post('/members/reset/confirm', async (req, res) =>{
 router.post("/members/signout", (req, res) => {
     req.session = null;
 
-    res.send({});
+    res.send("Signed Out");
 });
 
 // Current user

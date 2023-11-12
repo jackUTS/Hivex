@@ -77,15 +77,18 @@ router.post('/redeem-coupon/:code',
     currentMember,
     asyncHandler(async (req, res) => {
 
-        if (!req.currentMember) {
-            throw new BadRequestError("Member not authenticated");
-        }
-          
         const code = req.params.code
         const coupon = await Coupon.findOne({code})
         const memberId = req.currentMember.id;
         const coupons = await Coupon.find();
         const couponsForMember = coupons.filter(coupon => coupon.memberId === memberId);
+
+        console.log(req.currentMember.id);
+        console.log(coupon.memberId);
+
+        if (coupon.memberId !== req.currentMember.id) {
+            throw new BadRequestError("Member not authenticated");
+        }
 
         if (!coupon) {
             throw new NotFoundError()
