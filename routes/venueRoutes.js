@@ -167,6 +167,58 @@ router.post(
         res.status(201).send(venue);
     })
 )
+// Sumbit Review as Member
+// POST /api/venues/:venueId/reviews
+router.post('/:venueId/reviews', 
+    [
+        body("review")
+            .isLength({ min: 5, max: 300 })
+            .withMessage("Review must be between 5 and 300 characters"),
+    ],
+    validateRequest,
+    currentMember, 
+    async (req, res) => {
+    const venue = await Venue.findById(req.params.venueId);
+
+    if (!venue) {
+        return res.status(404).json({ message: 'Venue not found' });
+    }
+    if(req.currentMember) {
+        const { review } = req.body;
+    
+        const newReview = {
+            memberName: `${req.currentMember.firstName} ${req.currentMember.lastName}`,
+            venueName: venue.name,
+            review
+        };
+    
+        venue.reviews.push(newReview);
+        await venue.save();
+        res.status(201).json(venue);
+    }
+    else {
+        res.status(403).send({ message: 'Only members can add reviews' });
+    }
+});
+
+// Get all reviews for a venue
+// GET /api/venues/:venueId/reviews
+router.get(
+    "/reviews",
+    currentVenue,
+    asyncHandler(async (req, res) => {
+
+        const venue = await Venue.find({
+            venueId: req.currentVenue.id,
+        });
+
+        if (!venue) {
+            return res.status(404).json({ message: 'Venue not found' });
+        }
+        
+        res.status(200).json(venue.reviews);
+    })
+);
 
 // Sign in
 // POST /api/venues/signin

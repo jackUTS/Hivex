@@ -19,6 +19,17 @@ const venueSchema = mongoose.Schema(
             type: String,
             required: true,
         },
+        reviews : [{
+            memberName: {
+                type: String,
+            },
+            venueName: {
+                type: String,
+            },
+            review: {
+                type: String,
+            }
+        }]
     },
     {
         timestamps: true,
