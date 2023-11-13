@@ -83,13 +83,9 @@ router.post('/redeem-coupon/:code',
         const coupons = await Coupon.find();
         const couponsForMember = coupons.filter(coupon => coupon.memberId === memberId);
 
-        console.log(req.currentMember.id);
-        console.log(coupon.memberId);
-
         if (coupon.memberId !== req.currentMember.id) {
             throw new BadRequestError("Member not authenticated");
         }
-
         if (!coupon) {
             throw new NotFoundError()
         }
@@ -101,12 +97,14 @@ router.post('/redeem-coupon/:code',
         }
         if (coupon.memberId === req.currentMember.id && coupon.redeemed === false){
             coupon.redeemed = true;
+            coupon.redeemedAt = new Date();
             await coupon.save()
             res.status(201).send(coupon);
             res.json({ success: true, message: 'Coupon redeemed successfully' });
         } 
         if (couponsForMember.length >= 6){
-        throw new BadRequestError("No more than 6 coupons per member allowed"); 
+            console.log(couponsForMember.length);
+            throw new BadRequestError("No more than 6 coupons per member allowed"); 
         }
         else {
             res.send(coupon);

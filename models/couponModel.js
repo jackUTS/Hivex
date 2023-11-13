@@ -32,6 +32,10 @@ const couponSchema = mongoose.Schema(
         redeemed: {
           type: Boolean,
           default: false
+        },
+        redeemedAt: {
+          type: Date,
+          default: null
         }
     },
     {

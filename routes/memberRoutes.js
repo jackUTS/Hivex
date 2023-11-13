@@ -240,4 +240,39 @@ router.get(
     })
 );
 
+// Analytics
+// GET /api/analytics
+router.get(
+    "/analytics",
+    currentMember,
+    asyncHandler(async (req, res) => {
+        if (!req.currentMember.isBroker) {
+            throw new BadRequestError("Only brokers can view analytics");
+        }
+
+        const coupons = await Coupon.find();
+
+        const analyticsData = {};
+
+        coupons.forEach(coupon => {
+            const span = (coupon.redeemedAt - coupon.createdAt) / (24 * 60 * 60 * 1000); // Convert to Days
+            const usage = coupon.redeemed ? 1 : 0;
+
+            if (!analyticsData[coupon.title]) {
+                analyticsData[coupon.title] = {
+                    totalSpan: 0,
+                    totalUsage: 0,
+                    count: 0
+                };
+            }
+
+            analyticsData[coupon.title].totalSpan += span;
+            analyticsData[coupon.title].totalUsage += usage;
+            analyticsData[coupon.title].count += 1;
+        });
+
+        res.send(analyticsData);
+    })
+);
+
 module.exports = router;
