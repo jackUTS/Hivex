@@ -71,7 +71,7 @@ app.post('/approve-offer/:couponId', currentVenue, async (req, res) => {
     await deal.save(); // Save the updated deal
 
     // Send the offer to all members
-    await sendOfferToAllMembers(coupon);
+    await sendOfferToMembers(coupon);
 
     res.status(200).json({ message: 'Offer approved and sent to all members' }); // Respond with a 200 OK success message
   } else {
