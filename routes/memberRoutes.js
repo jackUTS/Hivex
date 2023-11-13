@@ -7,6 +7,7 @@ const asyncHandler = require("../middleware/asyncHandler");
 const { currentMember } = require("../middleware/current-member");
 const Member = require("../models/memberModel");
 const Coupon = require("../models/couponModel");
+const Venue = require("../models/venueModel");
 const crypto = require('crypto');
 
 const router = express.Router();
@@ -237,6 +238,31 @@ router.get(
         });
 
         res.send(coupons);
+    })
+);
+
+// Get all reviews by a member
+// GET /api/member/reviews
+router.get(
+    "/member/reviews",
+    currentMember,
+    asyncHandler(async (req, res) => {
+
+        if(req.currentMember) {
+            const venues = await Venue.find({ 'reviews.memberName': `${req.currentMember.firstName} ${req.currentMember.lastName}` }, 'reviews');
+    
+            if (!venues) {
+                return res.status(404).send({ message: 'No reviews found' });
+            }
+
+            const memberName = `${req.currentMember.firstName} ${req.currentMember.lastName}`;
+            const reviews = venues.flatMap(venue => venue.reviews.filter(review => review.memberName === memberName));
+            
+            res.status(200).send(reviews);
+        }
+        else {
+            res.status(403).send({ message: 'Only members can view reviews' });
+        }
     })
 );
 

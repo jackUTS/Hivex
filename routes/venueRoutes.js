@@ -201,22 +201,20 @@ router.post('/:venueId/reviews',
     }
 });
 
-// Get all reviews for a venue
-// GET /api/venues/:venueId/reviews
+// Get all reviews as Venue
+// GET /api/venues/reviews
 router.get(
     "/reviews",
     currentVenue,
     asyncHandler(async (req, res) => {
 
-        const venue = await Venue.find({
-            venueId: req.currentVenue.id,
-        });
+        const venue = await Venue.findById(req.currentVenue.id);
 
         if (!venue) {
-            return res.status(404).json({ message: 'Venue not found' });
+            return res.status(404).send({ message: 'Venue not found' });
         }
         
-        res.status(200).json(venue.reviews);
+        res.status(200).send(venue.reviews);
     })
 );
 
