@@ -127,37 +127,39 @@ router.get(
 
 // Redeem coupon
 // POST /api/coupons/redeem
-router.post('/redeem', 
-    currentMember,
-    asyncHandler(async (req, res) => {
+router.post("/redeem",
+        currentMember,
+        asyncHandler( async (req, res) => {
+            const {code} = req.body;
+            const memberId = "65050ae449718be08cde1cc4"
 
-        const {code} = req.body;
-        const memberId = "65050ae449718be08cde1cc4";
+            const coupon = await Coupon.findOne({
+                code: code,
+                "memberId": memberId,
+            })
+            console.log("Coupon Code: ", code, "\n", "Member ID: ", memberId);
+            console.log("Coupon Member: ", coupon.memberId);
 
-        const coupon = await Coupon.findOne({code})
-        console.log("Coupon is: ", coupon);
-        console.log("Code is: ", code);
-
-        if (!coupon) {
-            throw new NotFoundError("Coupon not found")
-        }
-        if (coupon.memberId !== memberId) {
-            throw new BadRequestError("Member not authenticated");
-        }
-        if (coupon.expiry < new Date()/1000){
-            throw new BadRequestError("Coupon Expired")
-        }
-        if (coupon.redeemed === true){
-            throw new BadRequestError("Coupon Already Redeemed")
-        }
-        if (coupon.memberId === memberId && coupon.redeemed === false){
-            coupon.redeemed = true;
-            coupon.redeemedAt = new Date();
-            await coupon.save()
-            res.status(201).send(coupon);
-            res.json({ success: true, message: 'Coupon redeemed successfully' });
-        } 
-    })
+            if (!coupon) {
+                throw new NotFoundError("Coupon Not Found");
+            }
+            if (coupon.memberId !== memberId) {
+                throw new BadRequestError("Member not authenticated");
+            }
+            if (coupon.expiry < new Date()/1000) {
+                throw new BadRequestError("Coupon Expired");
+            }
+            if (coupon.redeemed === true) {
+                throw new BadRequestError("Coupon already redeemed");
+            }
+            if (coupon.memberId === memberId && coupon.redeemed === false) {
+                coupon.redeemed = true;
+                coupon.redeemedAt = new Date();
+                await coupon.save();
+                res.status(201).send(coupon);
+                res.json({ success: true, message: "Çoupon redeemed successfully" });
+            }
+        })   
 );
 
 //Claim a Coupon
