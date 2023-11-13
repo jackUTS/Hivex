@@ -87,14 +87,11 @@ router.post(
     asyncHandler(async (req, res) => {
         const { name, address, email, password} = req.body;
         const existingVenue = await Venue.findOne({ email });
-        
-        console.log(req.currentMember.isBroker);
 
         if(req.currentMember.isBroker === false) {
             throw new BadRequestError("You must be logged in as a broker to add a venue");
         }
         if (existingVenue) {
-            console.log("Email in use");
             throw new BadRequestError("Email in use");
         }
         if (req.currentMember.isBroker === true) {
@@ -110,6 +107,38 @@ router.post(
 
         } else {
             res.status(403).send({ message: 'Only brokers can add venues' });
+        }
+    })
+);
+
+// Delete venue as Broker
+// Post /api/venues/delete-venue
+router.post(
+    "/delete-venue",
+    [
+        body("email").isEmail().withMessage("Email must be valid"),
+    ],
+    validateRequest,
+    currentMember,
+    asyncHandler(async (req, res) => {
+        const email = req.body.email;
+        const existingVenue = await Venue.findOne({ email });
+
+        if(req.currentMember.isBroker === false) {
+            throw new BadRequestError("You must be logged in as a broker to add a venue");
+        }
+
+        if (!existingVenue) {
+            throw new BadRequestError("Venue not found");
+        }
+        if(req.currentMember.isBroker === true) {
+
+            await existingVenue.remove();
+
+            res.status(201).send({ message: "Venue Deleted", venue: existingVenue });
+        } 
+        else {
+            res.status(403).send({ message: 'Only brokers can delete venues' });
         }
     })
 );
@@ -188,7 +217,7 @@ router.post(
 router.post("/signout", (req, res) => {
     req.session = null;
 
-    res.send({});
+    res.send("Signed Out");
 });
 
 // Current user
