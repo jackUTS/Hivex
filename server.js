@@ -35,7 +35,7 @@ app.use("/api/coupons", couponRoutes);
 app.use("/api/deals", dealRoutes)
 
 app.all("*", asyncHandler(async (req, res) => {
-    throw new NotFoundError();
+    throw new NotFoundError("Method unresolved");
 }));
 
 app.use(errorHandler);

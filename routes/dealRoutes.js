@@ -93,23 +93,29 @@ router.get(
 // activate the deal
 //POST /api/deals/activate
 router.post(
-    "/deals/activate",
+    "/activate",
+    currentVenue,
     asyncHandler(async (req, res) => {
         const {title} = req.body
-
-        try {
-            const deal = await Deal.findOne({title})
-
-            if (deal) {
-                deal.isActive = true
-                await deal.save()
-
-                res.json({message: 'Deal activated successfully'})
-            } else {
-                res.status(400).json({message: 'Deal not found'})
+ 
+        if(req.currentVenue) {
+            try {
+                const deal = await Deal.findOne({title})
+ 
+                if (deal) {
+                    deal.isActive = true
+                    await deal.save()
+ 
+                    res.json({message: 'Deal activated successfully'})
+                } else {
+                    res.status(400).json({message: 'Deal not found'})
+                }
+            } catch (err) {
+                res.status(500).json({ message: 'Internal server error'})
             }
-        } catch (err) {
-            res.status(500).json({ message: 'Internal server error'})
+        }
+        else {
+            res.status(403).send({ message: 'Only venues can activate deals' });
         }
     })
 );
@@ -117,7 +123,7 @@ router.post(
 // Discover a Deal (Member)
 //POST /api/deals/sendDeal
 router.post(
-    "/deals/sendDeal",
+    "/sendDeal",
     currentVenue,
     asyncHandler(async (req, res) => {
         

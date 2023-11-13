@@ -114,7 +114,7 @@ router.get(
         const coupon = await Coupon.findOne({code})
 
         if (!coupon) {
-            throw new NotFoundError()
+            throw new NotFoundError("Coupon not found")
         }
         if (coupon.expiry < new Date()/1000){
             throw new BadRequestError("Coupon Expired")
@@ -126,22 +126,23 @@ router.get(
 );
 
 // Redeem coupon
-// POST /api/coupons/redeem-coupon
-router.post('/redeem-coupon/:code', 
+// POST /api/coupons/redeem
+router.post('/redeem', 
     currentMember,
     asyncHandler(async (req, res) => {
 
-        const code = req.params.code
-        const coupon = await Coupon.findOne({code})
-        const memberId = req.currentMember.id;
-        const coupons = await Coupon.find();
-        const couponsForMember = coupons.filter(coupon => coupon.memberId === memberId);
+        const {code} = req.body;
+        const memberId = "65050ae449718be08cde1cc4";
 
-        if (coupon.memberId !== req.currentMember.id) {
-            throw new BadRequestError("Member not authenticated");
-        }
+        const coupon = await Coupon.findOne({code})
+        console.log("Coupon is: ", coupon);
+        console.log("Code is: ", code);
+
         if (!coupon) {
-            throw new NotFoundError()
+            throw new NotFoundError("Coupon not found")
+        }
+        if (coupon.memberId !== memberId) {
+            throw new BadRequestError("Member not authenticated");
         }
         if (coupon.expiry < new Date()/1000){
             throw new BadRequestError("Coupon Expired")
@@ -149,31 +150,28 @@ router.post('/redeem-coupon/:code',
         if (coupon.redeemed === true){
             throw new BadRequestError("Coupon Already Redeemed")
         }
-        if (coupon.memberId === req.currentMember.id && coupon.redeemed === false){
+        if (coupon.memberId === memberId && coupon.redeemed === false){
             coupon.redeemed = true;
             coupon.redeemedAt = new Date();
             await coupon.save()
             res.status(201).send(coupon);
             res.json({ success: true, message: 'Coupon redeemed successfully' });
         } 
-        if (couponsForMember.length >= 6){
-            console.log(couponsForMember.length);
-            throw new BadRequestError("No more than 6 coupons per member allowed"); 
-        }
-        else {
-            res.send(coupon);
-        }
     })
 );
 
 //Claim a Coupon
 //GET /api/coupons/assign
-router.get ("/coupons/assign", async (req, res) => {
+router.post ("/assign", async (req, res) => {
 
     const coupons = await Coupon.find();
-    const couponsForMember = coupons.filter(coupon => coupon.memberId === memberId);
+    const memberId = "65050ae449718be08cde1cc4";
+    const couponsForMember = coupons.filter((coupon) => coupon.memberId === memberId);
+    currentDeal = {id: "65390b676d471d276a63d068"};
+    console.log('Current Member ID: ', memberId);
 
     try {
+        console.log("Current Deal ID: ", currentDeal.id);
         const noMemberCoupon = await Coupon.findOne({
             memberId: {$exists: false},
             'dealId': currentDeal.id,
@@ -181,13 +179,15 @@ router.get ("/coupons/assign", async (req, res) => {
 
         if (noMemberCoupon) {
             console.log("Next Coupon without memberId: ", noMemberCoupon);
-            if (couponsForMember.length >= 6){
+            if (couponsForMember >= 6){
                 console.log(couponsForMember.length);
                 throw new BadRequestError("No more than 6 coupons per member allowed"); 
             }
             else {
-                noMemberCoupon.memberId = currentMember.id;
+                noMemberCoupon.memberId = memberId;
+                console.log(noMemberCoupon.memberId);
                 res.send(noMemberCoupon);
+                await noMemberCoupon.save();
             }
             
         } else {
