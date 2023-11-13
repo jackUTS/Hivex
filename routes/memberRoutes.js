@@ -2,6 +2,8 @@ const { validateRequest, BadRequestError } = require("@dqticket/common");
 const express = require("express");
 const { body } = require("express-validator");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+require("dotenv").config();
 
 const asyncHandler = require("../middleware/asyncHandler");
 const { currentMember } = require("../middleware/current-member");
@@ -25,7 +27,7 @@ router.post(
     ],
     validateRequest,
     asyncHandler(async (req, res) => {
-        const { firstName, lastName, email, password } = req.body;
+        const { firstName, lastName, email, password, age } = req.body;
         const existingMember = await Member.findOne({ email });
 
         if (existingMember) {
@@ -38,6 +40,7 @@ router.post(
             lastName,
             email,
             password,
+            age,
         });
         await member.save();
 
@@ -82,6 +85,7 @@ router.post(
             lastName,
             email,
             password,
+            age,
             isBroker: true,
         });
         await member.save();
@@ -145,21 +149,40 @@ router.post(
     })
 );
 
+const transporter = nodemailer.createTransport({
+    service: process.env.HOST, // Replace with Mail Service (Gmail, Hotmail, etc.)
+    auth: {
+        user: process.env.USER, // Replace with actual Email Address
+        pass: process.env.PASS, // Replace with Email password
+    }
+});
+
 //Forgot Password
 //POST /api/members/reset
 router.post("/members/reset", async (req, res) => {
     const {email} = req.body
     try {
-        const user = await Member.findOne({ email })
-        if (!user) {
-            return res.status(404).json({ message: 'User no found'})
+        const member = await Member.findOne({ email })
+        if (!member) {
+            return res.status(404).json({ message: 'Member not found'})
         }
 
         const resetToken = crypto.randomBytes(20).toString('hex')
         const tokenExpiration = new Date(Date.now() + 3600000)
-        user.resetToken = resetToken
-        user.tokenExpiration = tokenExpiration
-        await user.save()
+        member.resetToken = resetToken
+        member.tokenExpiration = tokenExpiration
+        await member.save()
+
+        //Send email with reset link
+        const resetLink = `localhost:3000/api/members/reset/${resetToken}`;
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: member.email,
+            subject: 'Password Reset',
+            text: `Click the following link to reset your password: ${resetLink}`,
+        };
+
+        await transporter.sendMail(mailOptions);
 
     } catch (err) {
         console.error(err)
@@ -230,7 +253,7 @@ router.get("/members/profile", currentMember, (req, res) => {
 // get all member coupons
 // GET /api/member/coupons
 router.get(
-    "/member/coupons",
+    "/members/coupons",
     currentMember,
     asyncHandler(async (req, res) => {
         const coupons = await Coupon.find({
@@ -244,7 +267,7 @@ router.get(
 // Get all reviews by a member
 // GET /api/member/reviews
 router.get(
-    "/member/reviews",
+    "/members/reviews",
     currentMember,
     asyncHandler(async (req, res) => {
 

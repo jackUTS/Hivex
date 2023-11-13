@@ -5,6 +5,15 @@ Tech Stack:
 - MongoDB
 - Express
 
+# Team Members
+Haley Nguyen - 24478529
+Jack Tollefsen - 13767862
+Kye Townsend - 14272482
+Munira Sangaaf - 2451995
+Dong Quan Nguyen - 24627150
+Walid Khan - 13873068
+Alexander Szakacs - 24565436
+
 # .env files
 ```js
 MONGODB_URI = "mongodb+srv://HivexAdmin:compasswtf@hivex.cs6oby3.mongodb.net/"

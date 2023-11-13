@@ -19,15 +19,19 @@ const couponSchema = mongoose.Schema(
         },
         memberId: {
           type: String,
-          default: null
+          required: false,
         },
         venueId: {
           type: String,
-          required: true
+          required: true,
+        },
+        dealId: {
+          type: String,
+          required: true,
         },
         points: {
           type: Number,
-          default: 10
+          default: 10,
         },
         redeemed: {
           type: Boolean,
@@ -36,7 +40,11 @@ const couponSchema = mongoose.Schema(
         redeemedAt: {
           type: Date,
           default: null
-        }
+        },
+        qrCode: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'QRCodeImage',
+        },
     },
     {
         timestamps: true,

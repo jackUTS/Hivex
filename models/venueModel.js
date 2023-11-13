@@ -17,17 +17,17 @@ const venueSchema = mongoose.Schema(
         },
         password: {
             type: String,
-            required: true,
+            required: false,
         },
         reviews : [{
             memberName: {
-                type: String,
+                type: String
             },
             venueName: {
-                type: String,
+                type: String
             },
             review: {
-                type: String,
+                type: String
             }
         }]
     },

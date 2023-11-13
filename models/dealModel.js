@@ -4,7 +4,6 @@ const dealSchema = mongoose.Schema(
     {
         title: {
           type: String,
-          unique: true,
         },
         totalCreated: {
             type: Number,
@@ -23,11 +22,15 @@ const dealSchema = mongoose.Schema(
         },
         venueId: {
           type: String,
-          required: true
+          required: true,
         },
         isActive: {
           type: Boolean,
           default: false,
+        },
+        memberIds: {
+          type: Array,
+          required: true,
         }
     },
     {

@@ -10,6 +10,7 @@ const { currentVenue } = require("../middleware/current-venue");
 const Venue = require("../models/venueModel");
 const { currentMember } = require("../middleware/current-member");
 
+
 const router = express.Router();
 
 // get all venues for Brokers
@@ -276,27 +277,32 @@ router.get("/profile", currentVenue, (req, res) => {
     res.send({ currentVenue: req.currentVenue || null });
 });
 
-module.exports = router;
+// Leave Review
+//GET /api/venues/review
+router.post("/review", 
+currentMember,
+currentVenue,
+asyncHandler(async (req, res) => {
+    try {
+    const {memberName, venueName, review} = req.body;
 
-/*<script src=
-“https://maps.googleapis.com/maps/api/js?key=AIzaSyDbmf_oibOuPXvtR11eQJiFcvY148s_Aow&callback=initMap&libraries=&v=weekly”
-async>
-</script>*/
-router.get("/location", currentVenue, (req, res) => {
-    const apiKey = AIzaSyDbmf_oibOuPXvtR11eQJiFcvY148s_Aow
+    const venueId = req.currentVenue.id;
+    const venue = await Venue.findById(venueId);
 
-    const address = currentVenue.address
+    const newReview = {
+        memberName: req.currentMember.name,
+        venueName: venue.name,
+        review,
+    };
 
-    if (!address) {
-        return res.status(400).json({ error: 'Address parameter is missing'})
+    venue.review.push(newReview);
+    await venue.save();
+
+    res.status(201).json(newReview);
+    } catch (error) {
+        res.status(500).json({ message: 'Internal Server Error!'})
     }
-
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`
-
-    axios.get(url)
-        .then(response => {
-            const location = response.data.results[0].geometry.location
-            res.json(location)
-        })
-
 })
+)
+
+module.exports = router;
