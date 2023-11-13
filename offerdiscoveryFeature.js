@@ -105,8 +105,8 @@ async function sendOfferToMembers(memberIds, coupon) {
         to: member.email,
         subject: 'New Offer Available',
         text: 'Dear ' + member.name + ',\n\n' +
-          'A new offer is now available: ' + coupon.title + ' (' + coupon.code + ').\n\n' +
-          'Details: ' + coupon.value + ' off, expires on ' + coupon.expiry + '.',
+          'A new offer is now available: ' + offer.title + ' (' + offer.code + ').\n\n' +
+          'Details: ' + offer.value + ' off, expires on ' + offer.expiry + '.',
       };
 
       // Send the email
