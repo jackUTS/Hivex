@@ -4,6 +4,7 @@ const { body } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const axios = require('axios');
 const mongoose = require("mongoose");
+const otplib = require("otplib");
 
 const asyncHandler = require("../middleware/asyncHandler");
 const { currentVenue } = require("../middleware/current-venue");
@@ -86,8 +87,12 @@ router.post(
     validateRequest,
     currentMember,
     asyncHandler(async (req, res) => {
-        const { name, address, email, password} = req.body;
+        const { name, address, email} = req.body;
         const existingVenue = await Venue.findOne({ email });
+        const secret = 'secret-key';
+
+        const otp = otplib.authenticator.generate(secret);
+        console.log("OTP: ", otp);
 
         if(req.currentMember.isBroker === false) {
             throw new BadRequestError("You must be logged in as a broker to add a venue");
@@ -101,7 +106,7 @@ router.post(
                 name,
                 address,
                 email,
-                password,
+                password: otp,
             });
             await venue.save();
             res.status(201).send({message: "Venue Added", venue: venue});
@@ -111,6 +116,85 @@ router.post(
         }
     })
 );
+
+// Venue Registration Link
+//POST /api/venues/register
+router.post("/register", async (req, res) => {
+    const {email} = req.body
+    try {
+        const venue = await Venue.findOne({ email })
+        if (!venue) {
+            return res.status(404).json({ message: 'Venue not found'})
+        }
+
+        const registerToken = crypto.randomBytes(20).toString('hex')
+        const tokenExpiration = new Date(Date.now() + 3600000)
+        venue.resetToken = resetToken
+        venue.tokenExpiration = tokenExpiration
+        await venue.save()
+
+        //Send email with reset link
+        const resetLink = `localhost:3000/api/venues/register/${resetToken}`;
+        const mailOptions = {
+            from: process.env.USER,
+            to: venue.email,
+            subject: 'Venue Registration',
+            text: `Click the following link to register your account: ${resetLink}`,
+        };
+
+        await transporter.sendMail(mailOptions);
+
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Internal Server Error'})
+    }
+});
+
+//Confirm Venue Registration (via the link)
+//GET /api/venues/register/:token
+router.get('/register/:token', async (req, res) => {
+    const token = req.params.token
+    try {
+        const venue = await Venue.findOne({
+            resetToken: token,
+            tokenExpiration: { $gt: new Date()}
+        })
+
+        if (!venue) {
+            return res.status(404).json({ message: 'Invalid or expired token'})
+        }
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: 'Internal Server Error'})
+    }
+});
+
+//Handle venue registration after confirmation
+//POST /api/venues/register/confirm
+router.post('/register/confirm', async (req, res) =>{
+    const {token, newPassword} = req.body
+    try {
+        const venue = await Venue.findOne({
+            resetToken: token,
+            tokenExpiration: {$gt: new Date()},
+        })
+
+        if (!venue) {
+            return res.status(404).json({message: 'Invalid or expired token'})
+        }
+
+        venue.password = newPassword
+
+        venue.resetToken = undefined
+        venue.tokenExpiration = undefined
+
+        await venue.save()
+        res.json({message: 'Venue registration completed successfully'})
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({message: 'Internal Server Error'})
+    }
+});
 
 // Delete venue as Broker
 // Post /api/venues/delete-venue

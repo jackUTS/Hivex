@@ -188,7 +188,7 @@ router.post("/members/reset", async (req, res) => {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error'})
     }
-})
+});
 
 //Confirm password reset (via the link)
 //GET /api/members/reset/:token
@@ -207,7 +207,7 @@ router.get('/members/reset/:token', async (req, res) => {
         console.error(err)
         res.status(500).json({ message: 'Internal Server Error'})
     }
-})
+});
 
 //Handle password update after confirmation
 //POST /api/members/reset/confirm
@@ -234,7 +234,7 @@ router.post('/members/reset/confirm', async (req, res) =>{
         console.error(err)
         res.status(500).json({message: 'Internal Server Error'})
     }
-})
+});
 
 // Sign out
 // POST /api/members/signout
